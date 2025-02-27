@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Chat with Payment</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Real-Time Chat with Payment Integration</h1>
+        
+        <div id="chatSection">
+            <div id="chatWindow"></div>
+            
+            <div id="messageInput">
+                <input type="text" id="message" placeholder="Type a message...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <div id="paymentSection">
+            <h3>Free Chat (Limited Access)</h3>
+            <button id="payButton" onclick="handleCheckout()">Unlock Premium Chat</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io('http://localhost:5000');
+        const chatWindow = document.getElementById('chatWindow');
+        const messageInput = document.getElementById('message');
+        const payButton = document.getElementById('payButton');
+
+        // Handle receiving messages
+        socket.on('receiveMessage', (msg) => {
+            const messageElement = document.createElement('div');
+            messageElement.textContent = msg;
+            chatWindow.appendChild(messageElement);
+        });
+
+        // Send message to the server
+        function sendMessage() {
+            const message = messageInput.value;
+            if (message) {
+                socket.emit('sendMessage', message);
+                const messageElement = document.createElement('div');
+                messageElement.textContent = message;
+                chatWindow.appendChild(messageElement);
+                messageInput.value = '';
+            }
+        }
+
+        // Handle Stripe Checkout
+        const stripe = Stripe('pk_test_51QtuVER10Fv3voSvOtvD5miQHwNbbzJwubC9DV4aBzYhFas0nPPCJiVjIpd0V8D8V4f6Tr3819e3xWuVk58hVQcs00FtufV73t'); // Get your public key from Stripe
+        async function handleCheckout() {
+            const response = await fetch('http://localhost:5000/create-checkout-session', {
+                method: 'POST',
+            });
+            const session = await response.json();
+            await stripe.redirectToCheckout({ sessionId: session.id });
+        }
+    </script>
+</body>
+</html>
